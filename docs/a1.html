@@ -4,15 +4,161 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
 
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
+    <title>Nithya Guduri's HCDE 439 Physical Computing Page!</title>
 
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
-    <h1>Example Student's Assignment 1!</h1>
+    <h1>Nithya Guduri's Assignment 1!</h1>
     <div class="header">
-      <img src="red-panda.jpg" />
+      <img src="holiday_lights.jpg" />
       <p>Here is all the documentation for assignment 1!</p>
     </div>
+
+    <!-- SCHEMATIC SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Schematic</h2>
+      <!-- Embedded PDF viewer for the schematic -->
+      <iframe src="a1_schematic.pdf" width="100%" height="500px" style="border:1px solid #ccc;">
+        <p>Your browser does not support embedded PDFs. <a href="a1_schematic.pdf">Download the schematic PDF here.</a></p>
+      </iframe>
+      <p class="caption">
+        The circuit connects Arduino digital pins 11, 10, and 9 to three LEDs (Red, Green, Yellow). 
+        The anode (longer leg) of each LED connects to its digital pin, and the cathode (shorter leg) connects through a 220&Omega; current-limiting resistor to GND.
+      </p>
+    </section>
+
+    <!-- RESISTOR CALCULATIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Resistor Calculations</h2>
+      <p>To safely restrict current through the LEDs and protect the Arduino digital pins, resistor values were calculated using Ohm's Law (V = I * R):</p>
+      <ul>
+        <li>Supply Voltage (V<sub>supply</sub>): 5V from Arduino Uno</li>
+        <li>Desired Current (I):</strong> 10mA (0.010A) for safe operating brightness</li>
+        <li>LED Forward Voltage (V<sub>f</sub>): ~2.0V &rarr; R = (5V - 2.0V) / 0.010A = 300&Omega;</li>
+      </ul>
+      <p>
+        Standard 220&Omega; resistors were chosen for all three LEDs. At 220&Omega;, maximum current per pin is around 13mA to 14mA, which is well below the Arduino Uno's maximum limit of 40mA per pin.
+      </p>
+    </section>
+
+    <!-- PHYSICAL CIRCUIT IMAGE SECTION -->
+    <section class="assignment-section">
+      <h2>Physical Circuit</h2>
+      <img src="circuit.jpg" alt="Breadboard setup with Arduino and 3 LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Breadboard setup showing the Red, Green, and Yellow LEDs wired to digital pins 11, 10, and 9. Each LED connects through a 220&Omega; resistor to the blue ground rail, which links directly to the Arduino GND pin.
+      </p>
+    </section>
+
+    <!-- FIRMWARE CODE SECTION -->
+    <section class="assignment-section">
+      <h2>Firmware Code (.ino)</h2>
+      <pre><code>// red led connected to pin 11
+int RED_PIN = 11;
+
+// green led connected to pin 10
+int GREEN_PIN = 10;
+
+// yellow led connected to pin 9
+int YELLOW_PIN = 9;
+
+// setup runs once on start
+void setup() {
+  // set red pin to output mode
+  pinMode(RED_PIN, OUTPUT);
+  // set green pin to output mode
+  pinMode(GREEN_PIN, OUTPUT);
+  // set yellow pin to output mode
+  pinMode(YELLOW_PIN, OUTPUT);
+}
+
+// loop runs over and over continuously
+void loop() {
+  // turn red on
+  digitalWrite(RED_PIN, HIGH);
+  // wait 150ms
+  delay(150);
+  // turn red off
+  digitalWrite(RED_PIN, LOW);
+  // turn green on
+  digitalWrite(GREEN_PIN, HIGH);
+  // wait 150ms
+  delay(150);
+  // turn green off
+  digitalWrite(GREEN_PIN, LOW);
+  // turn yellow on
+  digitalWrite(YELLOW_PIN, HIGH);
+  // wait 150ms
+  delay(150);
+  // turn yellow off
+  digitalWrite(YELLOW_PIN, LOW);
+
+  // turn green on
+  digitalWrite(GREEN_PIN, HIGH);
+  // wait 150ms
+  delay(150);
+  // turn green off
+  digitalWrite(GREEN_PIN, LOW);
+
+  // turn all leds on together
+  digitalWrite(RED_PIN, HIGH);
+  // turn green on
+  digitalWrite(GREEN_PIN, HIGH);
+  // turn yellow on
+  digitalWrite(YELLOW_PIN, HIGH);
+  // hold all on for 300ms
+  delay(300);
+  // turn red off
+  digitalWrite(RED_PIN, LOW);
+  // turn green off
+  digitalWrite(GREEN_PIN, LOW);
+  // turn yellow off
+  digitalWrite(YELLOW_PIN, LOW);
+  // pause before repeating the sequence
+  delay(300);
+}</code></pre>
+    </section>
+
+    <!-- CIRCUIT OPERATION SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Operation</h2>
+      <video controls width="600" style="max-width: 100%;">
+        <source src="operation.mov" type="video/quicktime">
+        <source src="operation.mov" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <p class="caption">
+        Video demonstrating the physical execution of the blinking pattern across the three LEDs on the breadboard.
+      </p>
+    </section>
+
+    <!-- ADDITIONAL QUESTIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Additional Questions</h2>
+
+      <h3>Question 1</h3>
+      <img src="voltage_graph.png" alt="Voltage vs Time Graph for 3 LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Graph showing Voltage (0V to 5V) on the Y-axis over Time on the X-axis for each of the 3 LEDs during one sequence cycle. The red dotted line represents the Red LED, the green solid line represents the Green LED, and the orange dashed line represents the Yellow LED.
+      </p>
+
+      <h3>Question 2</h3>
+      <p>
+        An Arduino Uno has 14 digital I/O pins (pins 0–13) and 6 analog input pins (A0–A5) that can also function as digital output pins. Excluding pins 0 and 1, which are reserved for serial RX/TX communication, you could control up to 18 LEDs independently. If each LED draws approximately 13mA when using 220&Omega; resistors, driving 18 LEDs simultaneously would draw:
+        <code>18 LEDs * 13mA = 234mA total current</code>
+      </p>
+
+      <h3>Question 3</h3>
+      <p>
+        I adjusted the delay time in the Arduino code using basic delay() functions and re-uploaded the sketch at varying speeds. I observed that once the delay dropped to around 9ms (a total cycle period of 18ms, or approximately 55.5Hz), my eyes could no longer perceive the individual flashes. At and below 9ms, the flickering completely smoothed out, making the LED appear as a solid, steady beam of light.
+      </p>
+
+      <h3>Question 4</h3>
+      <p>
+        I used the AI tool Gemini to assist with structuring the HTML document layout and writing CSS rules for consistent page spacing and formatting.
+      </p>
+    </section>
+
   </body>
 </html>
