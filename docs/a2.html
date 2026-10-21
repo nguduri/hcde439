@@ -9,10 +9,183 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
-    <h1>Example Student's Assignment 2!</h1>
+    <h1>Nithya Guduri's Assignment 2!</h1>
     <div class="header">
-      <img src="red-panda.jpg" />
+      <img src="led_toy.jpg" />
       <p>Here is all the documentation for assignment 2!</p>
     </div>
+
+    <!-- SCHEMATIC SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Schematic</h2>
+      <img src="schematic_a2.jpeg" alt="Breadboard setup with Arduino, button, pull-down resistor, and 3 LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        The circuit connects digital pin 2 to a tactile pushbutton with a 10k&Omega; pull-down resistor to GND. Digital pins 3, 5, and 6 connect to the anodes of Red, Green, and Blue LEDs, respectively. Each LED cathode connects to GND through a 220&Omega; current-limiting resistor.
+      </p>
+    </section>
+
+    <!-- RESISTOR & CURRENT CALCULATIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Resistor & Current Calculations</h2>
+      <p>
+        To safely restrict current through the LEDs and protect the Arduino digital pins, resistor values were calculated using Ohm's Law (V = I * R):
+      </p>
+      <ul>
+        <li>Supply Voltage (V<sub>cc</sub>): 5V from Arduino Uno</li>
+        <li>Red LED Forward Voltage (V<sub>f</sub>): ~2.0V</li>
+        <li>Desired Current (I): 15mA (0.015A)</li>
+        <li>Voltage drop across resistor (V<sub>R</sub>):</strong> 5V - 2.0V = 3.0V</li>
+        <li>Calculated Resistance (R): R = 3.0V / 0.015A = 200&Omega;</li>
+      </ul>
+      <p>
+        Standard 220&Omega; resistors were chosen for all three LEDs (Red, Green, Blue). At 220&Omega;, the current per LED is:
+        <code>I = 3.0V / 220&Omega; &approx; 13.6mA</code>, which is well below the Arduino Uno's maximum rating of 40mA per I/O pin.
+      </p>
+
+      <p>
+        A 10k&Omega; resistor is used as a pull-down resistor between digital pin 2 and ground (GND):
+      </p>
+      <ul>
+        <li>
+          Preventing Floating Inputs: When the button is NOT pressed, the 10k&Omega; resistor pulls digital pin 2 firmly to Ground (0V / LOW), eliminating floating pin states caused by static or electrical noise.
+        </li>
+        <li>
+          Limiting Current Flow: When the button IS pressed, 5V connects directly through the resistor to GND. The 10k&Omega; resistor limits the current to an extremely low level:
+          <code>I = 5V / 10,000&Omega; = 0.5mA (500&mu;A)</code>, preventing a direct short circuit while minimizing power consumption.
+        </li>
+      </ul>
+    </section>
+
+    <!-- PHYSICAL CIRCUIT IMAGE SECTION -->
+    <section class="assignment-section">
+      <h2>Physical Circuit</h2>
+      <!-- PLACEHOLDER 3: PHYSICAL CIRCUIT PHOTO -->
+      <!-- What to put here: A clear photo of your breadboard wired to the Arduino, showing button, resistors, and LEDs. -->
+      <img src="circuit_a2.jpg" alt="Breadboard setup with Arduino, button, pull-down resistor, and 3 LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Breadboard setup showing the tactile button connected to digital pin 2 with a 10k&Omega; pull-down resistor to GND. Red, Green, and Blue LEDs are connected to PWM digital pins 3, 5, and 6 with 220&Omega; current-limiting resistors connected to the GND rail.
+      </p>
+    </section>
+
+    <!-- FIRMWARE CODE SECTION -->
+    <section class="assignment-section">
+      <h2>Firmware Code (.ino)</h2>
+      <pre><code>// Define the digital pin connected to the pushbutton
+// Define the digital pin connected to the pushbutton
+const int buttonPin = 2;
+
+// Define array holding PWM digital pins for the 3 LEDs
+const int ledPins[] = {3, 5, 6};
+
+// Define total number of LEDs in our array
+const int numLeds = 3;
+
+// Variable to store the current state of the pushbutton
+int buttonState = 0;
+
+void setup() {
+  // Set the pushbutton pin as an input to read its state
+  pinMode(buttonPin, INPUT);
+  
+  // Use a for-loop to iterate through each LED pin in the array
+  for (int i = 0; i < numLeds; i++) {
+    // Configure each LED pin in the array as an output pin
+    pinMode(ledPins[i], OUTPUT);
+  }
+}
+
+void loop() {
+  // Read digital signal (HIGH or LOW) from pushbutton pin
+  buttonState = digitalRead(buttonPin);
+
+  // Check if the pushbutton is currently pressed (HIGH)
+  if (buttonState == HIGH) {
+    // Use a for-loop to cycle through fade brightness values (0 to 255)
+    for (int brightness = 0; brightness <= 255; brightness++) {
+      // Set brightness of LED 1 using analogWrite (PWM signal)
+      analogWrite(ledPins[0], brightness);
+      
+      // Turn LED 2 fully on using digitalWrite
+      digitalWrite(ledPins[1], HIGH);
+      
+      // Turn LED 3 fully on using digitalWrite
+      digitalWrite(ledPins[2], HIGH);
+      
+      // Pause execution for 5 milliseconds to control fade speed
+      delay(5);
+    }
+    
+    // Use a for-loop to cycle down fade brightness values (255 down to 0)
+    for (int brightness = 255; brightness >= 0; brightness--) {
+      // Decrease brightness of LED 1 using analogWrite
+      analogWrite(ledPins[0], brightness);
+      
+      // Pause execution for 5 milliseconds to make dimming visible
+      delay(5);
+    }
+  } else {
+    // Use a for-loop to loop through all LED pins when button is open
+    for (int i = 0; i < numLeds; i++) {
+      // Turn off each LED pin using digitalWrite
+      digitalWrite(ledPins[i], LOW);
+    }
+  }
+}</code></pre>
+    </section>
+
+    <!-- CIRCUIT OPERATION SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Operation</h2>
+      <!-- PLACEHOLDER 4: OPERATION GIF OR EMBEDDED VIDEO -->
+      <!-- What to put here: An animated GIF or embedded video/YouTube iframe showing the physical button press triggering the fade/light cycle. -->
+      <img src="a2_operation.gif" alt="Animated GIF showing the push button activating the fading LED and solid LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Demonstration of the interactive prototype: pressing the button turns on Green and Blue LEDs while smoothly fading the Red LED up and down using PWM. Releasing the button turns all LEDs off immediately.
+      </p>
+    </section>
+
+    <!-- ADDITIONAL QUESTIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Additional Questions</h2>
+
+      <h3>Question 1</h3>
+      <!-- PLACEHOLDER 5: PWM CHART GRAPH IMAGE -->
+      <!-- What to put here: An image showing 3 PWM wave lines for analogWrite values 64, 128, and 255 over time. -->
+      <img src="pwm_chart.jpeg" alt="PWM Voltage vs Time Graph for analogWrite values 64, 128, and 255" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Chart showing Voltage (0V to 5V) on the Y-axis over Time on the X-axis for analogWrite values 64 (25% duty cycle), 128 (50% duty cycle), and 255 (100% duty cycle / steady 5V).
+      </p>
+
+      <h3>Question 2</h3>
+      <p>
+        * Red LED (V<sub>f</sub> &approx; 2.0V): <code>I<sub>1</sub> = (5V - 2.0V) / 220&Omega; &approx; 13.6mA</code><br />
+        * Green LED (V<sub>f</sub> &approx; 3.0V): <code>I<sub>2</sub> = (5V - 3.0V) / 220&Omega; &approx; 9.1mA</code><br />
+        * Blue LED (V<sub>f</sub> &approx; 3.0V): <code>I<sub>3</sub> = (5V - 3.0V) / 220&Omega; &approx; 9.1mA</code><br />
+        * Arduino Board Operating Current: <code>&approx; 45mA</code>
+      </p>
+      <p>
+        <code>Total LED Current = 13.6mA + 9.1mA + 9.1mA = 31.8mA</code><br />
+        <code>Total Circuit Current = 31.8mA + 45mA = 76.8mA</code>
+      </p>
+      <p>
+        The maximum output current limit per micro-controller pin on the Arduino Uno is 40mA, and the maximum overall micro-controller current is 200mA. At 31.8mA total across 3 pins, our circuit operates well below both limits.
+      </p>
+      <p>
+        <code>Runtime = Battery Capacity (mAh) / Total Current Draw (mA)</code><br />
+        <code>Runtime = 1200 mAh / 76.8 mA &approx; 15.625 hours (15 hours and 37 minutes)</code>
+      </p>
+
+      <h3>Question 3</h3>
+      <p>
+        The voltage of 1.95V measured by the multimeter matches the theoretical value of 2.00V closely. The slight discrepancy (0.05V) can be attributed to standard tolerances related to the LED and multimeter.
+      </p>
+
+      <h3>Question 4</h3>
+      <p>
+        I did not use AI tools to complete this assignment.
+      </p>
+    </section>
+    </section>
+
   </body>
 </html>
