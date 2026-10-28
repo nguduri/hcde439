@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Nithya Guduri's HCDE 439 Physical Computing Page!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Nithya Guduri's Assignment 3!</h1>
+    <div class="header">
+      <img src="bright_light.jpg" />
+      <p>Here is all the documentation for assignment 3!</p>
+    </div>
+
+    <!-- SCHEMATIC SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Schematic</h2>
+      <img src="a3_schematic.jpeg" alt="Schematic diagram of the photoresistor voltage divider circuit with output LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        The circuit uses a photoresistor (LDR) in a voltage divider configuration paired with a 10k&Omega; fixed resistor connected to analog pin A0. Two separate output LEDs (Red on pin 9 and Blue on pin 10) are connected via 220&Omega; current-limiting resistors to GND.
+      </p>
+    </section>
+
+    <!-- RESISTOR CALCULATIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Resistor & Voltage Divider Calculations</h2>
+      <p>
+        To dynamically sense light levels, a photoresistor (LDR) is paired with a fixed resistor in a voltage divider circuit. The voltage $V_{out}$ measured at analog pin A0 is calculated using the voltage divider formula:
+      </p>
+
+      <p>
+        <code>V<sub>out</sub> = V<sub>in</sub> * (R<sub>2</sub> / (R<sub>1</sub> + R<sub>2</sub>))</code>
+      </p>
+
+      <ul>
+        <li>Supply Voltage (V<sub>in</sub>): 5V from Arduino Uno</li>
+        <li>R<sub>1</sub> (Variable Photoresistor): Resistance varies from ~1k&Omega; in bright ambient light to >100k&Omega; in total darkness.</li>
+        <li>R<sub>2</sub> (Fixed Resistor Selection): A 10k&Omega; resistor was chosen because it lies near the geometric midpoint of the photoresistor's total dynamic range (~1k&Omega; to 100k&Omega;), maximizing output voltage sensitivity and dynamic resolution across light changes.</li>
+      </ul>
+
+      <p><strong>Expected Output Voltages (V<sub>out</sub>) at Analog Pin A0:</strong></p>
+      <ul>
+        <li>Bright Conditions (R<sub>1</sub> &approx; 1k&Omega;):<br />
+          <code>V<sub>out</sub> = 5V * (10,000&Omega; / (1,000&Omega; + 10,000&Omega;)) = 5V * (10 / 11) &approx; 4.55V</code>
+        </li>
+        <li>Dark Conditions (R<sub>1</sub> &approx; 100k&Omega;):<br />
+          <code>V<sub>out</sub> = 5V * (10,000&Omega; / (100,000&Omega; + 10,000&Omega;)) = 5V * (10 / 110) &approx; 0.45V</code>
+        </li>
+      </ul>
+
+      <p><strong>Current Limiting Resistors for Output LEDs:</strong></p>
+      <p>
+        To safely limit current through the output indicator LEDs and protect the Arduino digital pins:
+        <code>R = (V<sub>supply</sub> - V<sub>f</sub>) / I = (5V - 2.0V) / 0.0136A &approx; 220&Omega;</code>
+      </p>
+      <p>
+        Using 220&Omega; resistors limits current per LED pin to approximately 13.6mA, safely under the Arduino limit of 40mA per pin.
+      </p>
+    </section>
+
+    <!-- PHYSICAL CIRCUIT IMAGE SECTION -->
+    <section class="assignment-section">
+      <h2>Physical Circuit</h2>
+      <img src="a3_circuit.jpg" alt="Breadboard setup with Arduino, photoresistor voltage divider, and two output LEDs" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Breadboard wiring overview: Photoresistor pin 1 is connected to 5V (Row 5, Col e/a), pin 2 connects to Row 10 (Col e). The 10k&Omega; resistor connects Row 10 to Ground. Analog pin A0 samples the midpoint at Row 10 (Col c). Red LED anode is at Row 20 (Pin 9) and Blue LED anode at Row 25 (Pin 10), with 220&Omega; resistors connected to the GND rail.
+      </p>
+    </section>
+
+    <!-- FIRMWARE CODE SECTION -->
+    <section class="assignment-section">
+      <h2>Firmware Code (.ino)</h2>
+      <pre><code>// Define the analog input pin connected to the photoresistor voltage divider node
+const int sensorPin = A0;
+
+// Define PWM output pins connected to two separate physical LEDs
+const int redLedPin = 9;
+const int blueLedPin = 10;
+
+// Variable to store the raw 10-bit analog reading from the sensor (0 to 1023)
+int sensorValue = 0;
+
+// Variable to store mapped 8-bit PWM value (0 to 255)
+int outputBrightness = 0;
+
+void setup() {
+  // Initialize serial communication at 9600 baud for monitoring system state
+  Serial.begin(9600);
+  
+  // Configure the Red LED pin as a digital output
+  pinMode(redLedPin, OUTPUT);
+  
+  // Configure the Blue LED pin as a digital output
+  pinMode(blueLedPin, OUTPUT);
+}
+
+void loop() {
+  // Read the analog voltage level from the photoresistor divider on pin A0
+  sensorValue = analogRead(sensorPin);
+
+  // Map the 10-bit ADC value (0-1023) down to an 8-bit PWM brightness value (0-255)
+  outputBrightness = map(sensorValue, 0, 1023, 0, 255);
+
+  // Evaluate if ambient light reading falls below threshold value of 500
+  if (sensorValue < 500) {
+    // Fade the Red LED on proportionally to how dark the room is
+    analogWrite(redLedPin, 255 - outputBrightness);
+    
+    // Keep Blue LED off during low-light state
+    analogWrite(blueLedPin, 0);
+    
+    // Print custom state message and reading data to Serial Monitor
+    Serial.print("Smart Home Alert: Dark Condition Detected | Sensor ADC: ");
+    Serial.print(sensorValue);
+    Serial.print(" | Night Indicator Output: ");
+    Serial.println(255 - outputBrightness);
+  } else {
+    // Keep Red LED off during high-light state
+    analogWrite(redLedPin, 0);
+    
+    // Fade the Blue LED on proportionally to ambient daylight
+    analogWrite(blueLedPin, outputBrightness);
+    
+    // Print custom state message and reading data to Serial Monitor
+    Serial.print("Smart Home Alert: Daylight Condition Detected | Sensor ADC: ");
+    Serial.print(sensorValue);
+    Serial.print(" | Day Indicator Output: ");
+    Serial.println(outputBrightness);
+  }
+
+  // Brief pause to stabilize sensor sampling and prevent excessive serial prints
+  delay(100);
+}</code></pre>
+    </section>
+
+    <!-- CIRCUIT OPERATION SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Operation</h2>
+      <img src="a3_operation.gif" alt="Animated GIF showing light levels changing and the LEDs fading dynamically" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Demonstration of physical execution: Covering the photoresistor transitions the system to low-light mode, fading the Red LED on. Exposing it to light turns off the Red LED and fades the Blue LED on proportionally.
+      </p>
+
+      <!-- PLACEHOLDER 5: SERIAL MONITOR OUTPUT IMAGE/TEXT -->
+      <img src="a3_serial_monitor.png" alt="Screenshot of Arduino Serial Monitor output showing light detection state messages" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Sample Serial Monitor output verifying real-time 10-bit sensor sampling and mapped PWM output values during state changes.
+      </p>
+    </section>
+
+    <!-- ADDITIONAL QUESTIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Additional Questions</h2>
+
+      <h3>Question 1</h3>
+      <p>
+        Yes, the variable resistor (photoresistor) can be placed in either the R<sub>1</sub> or R<sub>2</sub> position of the voltage divider, but changing its position reverses how the output voltage (V<sub>out</sub>) responds to light changes.
+      </p>
+      <p>
+        When the photoresistor is placed in the R<sub>1</sub> position (top half, connected to 5V) and a fixed 10k&Omega; resistor is at R<sub>2</sub>:
+      </p>
+      <ul>
+        <li>
+          In bright light, photoresistor resistance drops to around 1k&Omega;:<br />
+          <code>V<sub>out</sub> = 5V * (10,000 / (1,000 + 10,000)) = 5V * (10 / 11) &approx; 4.55V</code>
+        </li>
+        <li>
+          In the dark, photoresistor resistance rises to around 100k&Omega;:<br />
+          <code>V<sub>out</sub> = 5V * (10,000 / (100,000 + 10,000)) = 5V * (10 / 110) &approx; 0.45V</code>
+        </li>
+      </ul>
+      <p>
+        If you swap them so the photoresistor is in the R<sub>2</sub> position (bottom half, connected to GND) with the 10k&Omega; resistor at R<sub>1</sub>:
+      </p>
+      <ul>
+        <li>
+          In bright light (1k&Omega;):<br />
+          <code>V<sub>out</sub> = 5V * (1,000 / (10,000 + 1,000)) = 5V * (1 / 11) &approx; 0.45V</code>
+        </li>
+        <li>
+          In the dark (100k&Omega;):<br />
+          <code>V<sub>out</sub> = 5V * (100,000 / (10,000 + 100,000)) = 5V * (100 / 110) &approx; 4.55V</code>
+        </li>
+      </ul>
+      <p>
+        So it works in either position, but putting it at R<sub>1</sub> gives higher voltage readings in bright light, whereas putting it at R<sub>2</sub> gives higher voltage readings in the dark.
+      </p>
+
+      <h3>Question 2</h3>
+      <!-- PLACEHOLDER FOR GRAPH IMAGE -->
+      <img src="a3_graph.jpeg" alt="Voltage vs Time Graph at A0 pin" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Graph plotting V-measure at pin A0 over time during the demonstration video.
+      </p>
+      <p>
+        The graph above tracks the voltage measured at pin A0 during my circuit's video demonstration. At the start, under normal ambient light, V-measure stays steady near 4.2V. When I cover the photoresistor with my hand, the resistance rapidly jumps up, causing the measured voltage to drop down close to 0.5V.
+      </p>
+
+      <h3>Question 3</h3>
+      <p>
+        On the standard Arduino Uno, <code>analogRead()</code> gives a 10-bit value (ranging from 0 to 2<sup>10</sup> - 1, or 0 to 1023), and <code>analogWrite()</code> uses 8-bit PWM (ranging from 0 to 2<sup>8</sup> - 1, or 0 to 255). That's why the original mapping line looks like this:
+      </p>
+      <p>
+        <code>outputBrightness = map(sensorValue, 0, 1023, 0, 255);</code>
+      </p>
+      <p>
+        If the system instead used a 16-bit ADC, the input range would scale up to 0–65535 (2<sup>16</sup> - 1). With a 10-bit PWM output, the output range would expand to 0–1023 (2<sup>10</sup> - 1). 
+      </p>
+      <p>
+        To adapt to these resolution specs, the updated <code>map()</code> code would be:
+      </p>
+      <p>
+        <code>outputBrightness = map(sensorValue, 0, 65535, 0, 1023);</code>
+      </p>
+      <p>
+        This scales down the higher resolution 16-bit sensor input into the broader 10-bit PWM range, allowing for significantly finer brightness control.
+      </p>
+
+      <h3>Question 4</h3>
+      <p>
+        I did not use AI tools to complete this assignment.
+      </p>
+    </section>
+
+  </body>
+</html>
