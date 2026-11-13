@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Nithya Guduri's HCDE 439 Physical Computing Page!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Nithya Guduri's Assignment 5!</h1>
+    <div class="header">
+      <img src="hand.jpg" />
+      <p>Here is all the documentation for assignment 5!</p>
+    </div>
+
+    <!-- SCHEMATIC SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Schematic</h2>
+      <!-- PLACEHOLDER 2: CIRCUIT SCHEMATIC IMAGE -->
+      <!-- What to put here: A clean digital or clearly scanned/photographed schematic showing the Arduino, Capacitive Sensor (Pins 4 & 2 with 1M resistor), N-MOSFET (Gate on Pin 9 with 220 & 10k resistors, Drain to LED-, Source to GND), 12V External Power Supply, and 12V LED Strip -->
+      <img src="a5_schematic.jpeg" alt="Schematic diagram showing Arduino Uno, capacitive touch sensor, N-MOSFET transistor, 12V external power supply, and 12V LED strip" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Schematic of the high-load circuit. On the logic side, digital pins 4 and 2 connect across a 1MΩ resistor to create a capacitive touch sensor using the CapacitiveSensor library. On the load side, PWM digital pin 9 connects through a 220Ω resistor to the Gate of an N-MOSFET (with a 10kΩ pull-down resistor to GND). The N-MOSFET switches the negative side of a 12V LED strip powered by an external 12V DC wall supply that shares a common ground with the Arduino.
+      </p>
+    </section>
+
+    <!-- CALCULATIONS & CURRENT JUSTIFICATION SECTION -->
+    <section class="assignment-section">
+      <h2>Resistor Calculations, Voltages & Current Justification</h2>
+      <p>
+        Because this circuit separates 5V Arduino logic power from 12V external load power, each resistor value was chosen to protect the microcontroller pins while keeping the N-MOSFET switching reliably:
+      </p>
+      <ul>
+        <li>
+          1MΩ Capacitive Sensor Resistor (Pins 4 & 2): Placed between the send pin (Pin 4) and receive pin (Pin 2) to form an RC (resistor-capacitor) timing circuit with the touch wire and my body's capacitance. A high resistance value of 1MΩ slows down how fast Pin 2 charges to match Pin 4 when touched, giving the library enough time resolution to detect touch and proximity while limiting pin current to a tiny <code>I = 5V / 1,000,000Ω = 5μA</code>.
+        </li>
+        <li>
+          220Ω Gate Resistor (Pin 9 to MOSFET Gate): Limits the brief inrush current from Arduino Pin 9 when charging the MOSFET's internal gate capacitance during PWM switching. Using Ohm's Law, peak current is capped at <code>I = 5V / 220Ω ≈ 22.7mA</code>, which stays safely below the Arduino Uno's 40mA maximum per-pin limit.
+        </li>
+        <li>
+          10kΩ Pull-Down Resistor (MOSFET Gate to GND): Connects the Gate to Ground so that while the Arduino is powered off or resetting (before <code>pinMode()</code> sets the pin state), any stray static charge drains away and the 12V LED strip stays completely off instead of flickering.
+        </li>
+      </ul>
+
+      <p><strong>Expected Voltages & Currents at Key Circuit Nodes:</strong></p>
+      <ul>
+        <li>
+          Capacitive Touch Node (Pin 2): Operates at 5V logic levels with negligible current (~5μA).
+        </li>
+        <li>
+          MOSFET Gate Node (Pin 9): Receives a 5V PWM signal (0V to 5V average depending on duty cycle). Steady-state current into the insulated gate is virtually 0mA once charged.
+        </li>
+        <li>
+          External Load Loop (12V Supply → LED Strip → MOSFET Drain to Source): Operates at 12V DC. My section of 12V LED strip draws approximately 0.4A to 0.5A (400mA–500mA) at full brightness (<code>analogWrite(255)</code>).
+        </li>
+        <li>
+          Transistor Current Limit Justification: The absolute maximum continuous drain current (I<sub>D</sub>) between Drain and Source is 47A for the IRLZ44N. Drawing ~0.5A is less than 4% of even the lowest-rated MOSFET's maximum limit, so the transistor runs cool without needing a heatsink.
+        </li>
+      </ul>
+    </section>
+
+    <!-- PHYSICAL CIRCUIT IMAGE SECTION -->
+    <section class="assignment-section">
+      <h2>Physical Circuit</h2>
+      <img src="a5_circuit.jpg" alt="Breadboard setup with Arduino Uno, capacitive sensor, N-MOSFET transistor, 12V power supply, and 12V LED strip" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Physical breadboard setup showing common ground shared between the Arduino GND pin and the negative terminal of the 12V power supply on the blue rail. Digital pins 4 and 2 connect across a 1MΩ resistor with a jumper wire acting as the capacitive touch pad. The N-MOSFET sits across rows 9, 10, and 11: row 9 (Gate) connects to pin 9 through a 220Ω resistor and to GND through a 10kΩ resistor; row 10 (Drain) connects to the negative wire of the 12V LED strip; and row 11 (Source) connects to the blue ground rail. The positive wire of the LED strip connects directly to the 12V red power rail.
+      </p>
+    </section>
+
+    <!-- FIRMWARE CODE SECTION -->
+    <section class="assignment-section">
+      <h2>Firmware Code (.ino)</h2>
+      <pre><code>// Include the CapacitiveSensor library to measure touch and proximity capacitance
+#include <CapacitiveSensor.h>
+
+// Create a capacitive sensor object using Pin 4 as the send pin and Pin 2 as the receive pin
+CapacitiveSensor touchSensor = CapacitiveSensor(4, 2);
+
+// Define the PWM-capable Arduino pin connected to the N-MOSFET Gate
+const int MOSFET_PIN = 9;
+
+// Run once when the Arduino powers on or resets
+void setup() {
+  // Initialize serial communication at 9600 bits per second to log sensor readings
+  Serial.begin(9600);
+  
+  // Configure MOSFET_PIN as an OUTPUT; the pin initializes in a LOW (0V) state, keeping the transistor OFF
+  pinMode(MOSFET_PIN, OUTPUT);
+}
+
+// Run continuously after setup completes
+void loop() {
+  // Collect 30 samples from the capacitive sensor to obtain a stable reading
+  long sensorValue = touchSensor.capacitiveSensor(30);
+
+  // Print the raw capacitive sensor value to the Serial Monitor
+  Serial.println(sensorValue);
+
+  // Map the sensor reading (0 to 1000) to an 8-bit PWM brightness range (255 to 0)
+  int brightness = map(sensorValue, 0, 1000, 255, 0);
+
+  // Constrain the brightness value so it strictly stays between 0 and 255
+  brightness = constrain(brightness, 0, 255);
+
+  // Output the PWM signal to the N-MOSFET Gate to control the 12V LED strip brightness
+  analogWrite(MOSFET_PIN, brightness);
+
+  // Pause for 50 milliseconds between readings to maintain smooth output and readable serial data
+  delay(50);
+}</code></pre>
+    </section>
+
+    <!-- CIRCUIT OPERATION SECTION -->
+    <section class="assignment-section">
+      <h2>Circuit Operation</h2>
+      <img src="a5_operation.gif" alt="Animated GIF showing capacitive touch sensor controlling the brightness of the 12V LED strip via N-MOSFET" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Demonstration of the working circuit: touching the capacitive sensor wire changes the capacitance measured between pins 4 and 2, modulating the PWM signal sent from pin 9 to the N-MOSFET Gate and smoothly adjusting the brightness of the 12V LED strip.
+      </p>
+    </section>
+
+    <!-- ADDITIONAL QUESTIONS SECTION -->
+    <section class="assignment-section">
+      <h2>Additional Questions</h2>
+
+      <h3>Question 1</h3>
+      <p>
+        Looking at the text printed on the front face of my N-MOSFET transistor, I am using the IRLZ44N. According to its datasheet, the absolute maximum continuous drain current (I<sub>D</sub>) between pins 2 (Drain) and 3 (Source) at 25°C is 47A.
+      </p>
+
+      <h3>Question 2</h3>
+      <!-- PLACEHOLDER 5: DC MOTOR SCHEMATIC IMAGE -->
+      <!-- What to put here: A hand-drawn (clearly photographed) or digital schematic showing the Arduino Uno, N-MOSFET with gate/pull-down resistors (220 ohm and 10k ohm), external power supply, DC motor, and flyback diode (stripe/cathode toward external +V, anode toward MOSFET Drain) -->
+      <img src="a5_q2_schematic.jpeg" alt="Schematic of Arduino controlling a DC motor with an N-MOSFET and flyback diode" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Schematic of an Arduino controlling a DC motor through an N-MOSFET low-side switch, including a flyback diode wired in parallel across the motor terminals (cathode toward external +V, anode toward the MOSFET Drain) to protect the circuit from inductive voltage spikes when the motor switches off.
+      </p>
+      <p><strong>Example Components & Datasheets:</strong></p>
+      <ul>
+        <li>Microcontroller: Arduino Uno Rev3 (ATmega328P)</li>
+        <li>N-MOSFET Transistor: IRLZ44N Logic-Level N-Channel MOSFET (Infineon)</li>
+        <li>DC Motor: Mabuchi RF-300FA-12350 (3V–12V DC Motor)</li>
+        <li>Flyback Diode: 1N4007 Standard Rectifier Diode (1000V, 1A — ON Semiconductor / Vishay)</li>
+      </ul>
+
+      <h3>Question 3</h3>
+      <!-- PLACEHOLDER 6: L293D DUAL MOTOR SCHEMATIC IMAGE -->
+      <!-- What to put here: A schematic showing the Arduino Uno wired to the Texas Instruments L293D H-Bridge IC (Pin 16 VCC1 to 5V, Pin 8 VCC2 to external motor power, Pins 4/5/12/13 to common GND, Pins 1 & 9 Enable to 5V/PWM, Pins 2 & 7 to Arduino Pins 2 & 3 driving Motor A on Pins 3 & 6, and Pins 10 & 15 to Arduino Pins 4 & 5 driving Motor B on Pins 11 & 14) -->
+      <img src="a5_q3_schematic.jpeg" alt="Schematic of Arduino Uno wired to L293D dual H-bridge driver controlling two DC motors" style="max-width: 100%; height: auto;" />
+      <p class="caption">
+        Schematic showing an Arduino Uno connected to a TI L293D quadruple half-H driver controlling two independent DC motors. Logic power (Pin 16) and enable pins (Pins 1 and 9) connect to 5V, motor supply (Pin 8) connects to external power, and all four ground pins (4, 5, 12, 13) tie to common ground.
+      </p>
+      <pre><code>// Pseudocode for controlling two DC motors with the L293D H-Bridge driver
+// Pin mapping:
+// Motor A inputs: Pin 2 (1A) and Pin 3 (2A), Enable (1,2EN) tied to 5V
+// Motor B inputs: Pin 4 (3A) and Pin 5 (4A), Enable (3,4EN) tied to 5V
+
+SETUP:
+  Configure pins 2, 3, 4, and 5 as OUTPUTS
+
+LOOP:
+  // 1. Move both motors forward
+  Set Pin 2 HIGH and Pin 3 LOW    // Motor A forward
+  Set Pin 4 HIGH and Pin 5 LOW    // Motor B forward
+  Wait 2 seconds
+
+  // 2. Move both motors backward
+  Set Pin 2 LOW and Pin 3 HIGH    // Motor A backward
+  Set Pin 4 LOW and Pin 5 HIGH    // Motor B backward
+  Wait 2 seconds
+
+  // 3. Move Motor A forward and Motor B backward
+  Set Pin 2 HIGH and Pin 3 LOW    // Motor A forward
+  Set Pin 4 LOW and Pin 5 HIGH    // Motor B backward
+  Wait 2 seconds
+
+  // 4. Move Motor A backward and Motor B forward
+  Set Pin 2 LOW and Pin 3 HIGH    // Motor A backward
+  Set Pin 4 HIGH and Pin 5 LOW    // Motor B forward
+  Wait 2 seconds</code></pre>
+
+      <h3>Question 4</h3>
+      <p>
+        I did not use AI tools to complete this assignment.
+      </p>
+    </section>
+
+  </body>
+</html>
